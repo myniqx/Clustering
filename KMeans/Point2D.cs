@@ -15,6 +15,7 @@ namespace KMeans
         Pen pen = new Pen(Color.Red);
         public double[] MSV;
         public double[] distList;
+
         public Point2D(float x, float y)
         {
             this.x = x;
@@ -29,25 +30,41 @@ namespace KMeans
         }
 
         static Random r = new Random();
-        public Point2D(int w,int h,int cc)
+        public Point2D(int w,int h)
         {
             x = (float)r.NextDouble() * w;
             y = (float)r.NextDouble() * h;
-            MSV = new double[cc];
-            distList = new double[cc];
             color = Color.Black;
         }
 
         public void CalculateMSV(List<Cluster> cls, double m)
         {
+            // kmean algoritmasında MSV ve distList e gerek yok.
+            // dolayısı ile bu fonksiyon çağırıldığında ihtiyaç halinde arraylar oluşturulacak
+
             if (MSV == null || MSV.Length != cls.Count)
             {
                 MSV = new double [cls.Count];
                 distList = new double[cls.Count];
             }
-            double fizzm = 2.0 / (m - 1.0);
+
+            /*
+                m -> fuzzy factor
+                dist(p,o) -> ağırlığı hesaplanan kümenin merkezinin p noktasına uzaklığı
+                dist(p,o(i)) -> i. küme merkezinin p noktasına uzaklığı
+                C -> küme
+
+                ağırlık = 
+                { 1 / <TOPLAM ( 1 den küme sayısına ) [ dist(p,o) / dist(p,o(i)) ] ^ [ 2 - (m-1) ]> }  
+                
+                MSV = ağırlık ^ m   
+
+                formülleri ile hesaplanıyor.
+            */
+
+            double fizzm = 2.0 / (m - 1.0);  //üst hep sabit olacağı için defalarca hesaplatmadım
             for (int i = 0; i < cls.Count; i++)
-                distList[i] = Math.Sqrt(dist(cls[i].origins));
+                distList[i] = Math.Sqrt(dist(cls[i].origins));  //önce bir defa uzaklıkları bulduk
             double best = 0;
             for (int i = 0; i < cls.Count; i++)
             {
@@ -55,15 +72,16 @@ namespace KMeans
                 for (int j = 0; j < cls.Count; j++)
                 {
                     double ratio = i!=j ? distList[i] / distList[j] : 1.0;
-                    double val = Math.Pow(ratio, fizzm);
-                    mm += val;
+                    double val = Math.Pow(ratio, fizzm);  // uzaklıkları oranı ^ fizzm
+                    mm += val;  //hepsini topla
                 }
-                MSV[i] = Math.Pow(1.0 / mm, m);
+                MSV[i] = Math.Pow(1.0 / mm, m);     //MSV değerini bul.
                 if (MSV[i] > best)
                 {
                     best = MSV[i];
-                    bestCluster = cls[i];
-                }
+                    bestCluster = cls[i];           // en yüksek ağırlık hangi kümenin ise bu noktayı ona ait miş gibi boya
+                }  // unutmadan FCM'de bir noktanın bir kümeye <ağırlık> dereceden aidiyeti söz konusu
+                   // burada yaptığım sadece boyama için. yoksa her nokta her kümeye <ağırlık> derecesinden ait.
             }
         }
 
