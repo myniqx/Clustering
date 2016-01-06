@@ -59,8 +59,8 @@ namespace KMeans
 
         void addData(int x, int y)
         {
-            const float radius = 30f;
-            int count = ItemCount / 100;
+            float radius = Math.Max(pictureBox.Width,pictureBox.Height) / 15f;
+            int count = ItemCount / 60;
 
             for (int i = 0; i < count; i++)
             {
