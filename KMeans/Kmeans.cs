@@ -20,6 +20,8 @@ namespace KMeans
         List<Point2D> points = new List<Point2D>();
         List<Cluster> clusters = new List<Cluster>();
 
+
+        Random random = new Random();
         private int IterationCount = 1000;
         private double ErrorThreshold = 0.5;
         private int ItemCount = 200;
@@ -39,28 +41,56 @@ namespace KMeans
             ItemCount = Math.Max(20, Math.Min(1000, ItemCount));
             ErrorThreshold = Math.Max(0.1, Math.Min(2, ErrorThreshold));
             FuzzyFactor = Math.Max(1.01, Math.Min(Double.MaxValue, FuzzyFactor));
+        }
 
+        void resetData() => points.Clear();
+
+        void randomData()
+        {
+            if (int.TryParse(t_item.Text, out ItemCount) == false) ItemCount = 200;
+            ItemCount = Math.Max(20, Math.Min(1000, ItemCount));
+            resetData();
+            for (int i = 0; i < ItemCount; i++)
+            {
+                points.Add(new Point2D(pictureBox.Width, pictureBox.Height, ClusterCount));
+            }
+            pictureBox.Invalidate();
+        }
+
+        void addData(int x, int y)
+        {
+            const float radius = 30f;
+            int count = ItemCount / 100;
+
+            for (int i = 0; i < count; i++)
+            {
+                double r = random.NextDouble() * radius;
+                double ang = random.NextDouble() * Math.PI;
+                float _x = (float) (r * Math.Cos(ang)) + x;
+                float _y = (float) (r * Math.Sin(ang)) + y;
+                if (0 > _x || _x > pictureBox.Width) continue;
+                if (0 > _y || _y > pictureBox.Height) continue;
+                points.Add(new Point2D(_x, _y));
+            }
+            pictureBox.Invalidate();
         }
 
         private void resetall()
         {
             collectData();
-            Random r = new Random();
-            points.Clear();
-            clusters.Clear();
-            for (int i = 0; i < ItemCount; i++) {
-                points.Add(new Point2D(pictureBox.Width, pictureBox.Height, ClusterCount));
-            }
+            clusters.Clear();       
 
+            if(points.Count == 0) randomData();
 
             var colours = new[]
             {
                 Color.Red, Color.Blue, Color.Green, Color.Yellow, Color.Violet, Color.Chocolate, Color.DarkOrchid,
                 Color.YellowGreen, Color.Teal, Color.Purple
             };
+
             for(int i=0;i<ClusterCount;i++)
             {
-                clusters.Add(new Cluster(r,pictureBox.Width, pictureBox.Height, colours[i]));
+                clusters.Add(new Cluster(random,pictureBox.Width, pictureBox.Height, colours[i]));
             }
 
 
@@ -73,22 +103,18 @@ namespace KMeans
             Graphics g = e.Graphics;
             g.FillRectangle(Brushes.White, 0, 0, pictureBox.Width, pictureBox.Height);
 
-            foreach (var p in points)
-                p.draw(g);
+            foreach (var p in points) p.draw(g);
 
             bool finalscene = AnimTimer.Enabled == false;
             finalscene = finalscene || animatecheck.Checked == false;
+            finalscene = finalscene && show_olds.Checked;
             foreach (var c in clusters) c.draw(g, finalscene);
         }
 
         double iterasyonFCM()
         {
             foreach (var point in points) { point.CalculateMSV(clusters, FuzzyFactor); }
-            double err = 0.0;
-            for(int i=0;i<clusters.Count;i++)
-            {
-                err += clusters[i].calculateOrigin(i,points,FuzzyFactor);
-            }
+            double err = clusters.Select((t, i) => t.calculateOrigin(i, points, FuzzyFactor)).Sum();
             if (err < ErrorThreshold) AnimTimer.Enabled = false;
             return err;
         }
@@ -111,8 +137,7 @@ namespace KMeans
             }
 
             double err = clusters.Sum(c => c.CheckOrigin());
-            if (err < ErrorThreshold)
-                AnimTimer.Enabled = false;
+            AnimTimer.Enabled = err > ErrorThreshold;
             return err;
         }
 
@@ -142,6 +167,24 @@ namespace KMeans
         {
             kmeans = false;
             resetall();
+        }
+
+        private void pictureBox_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (AnimTimer.Enabled) return;
+            addData(e.X, e.Y);
+        }
+
+        private void random_data_Click(object sender, EventArgs e)
+        {
+            randomData();
+        }
+
+        private void clear_data_Click(object sender, EventArgs e)
+        {
+            resetData();
+            clusters.Clear();
+            pictureBox.Invalidate();
         }
     }
 }

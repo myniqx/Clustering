@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -39,6 +40,11 @@ namespace KMeans
 
         public void CalculateMSV(List<Cluster> cls, double m)
         {
+            if (MSV == null || MSV.Length != cls.Count)
+            {
+                MSV = new double [cls.Count];
+                distList = new double[cls.Count];
+            }
             double fizzm = 2.0 / (m - 1.0);
             for (int i = 0; i < cls.Count; i++)
                 distList[i] = Math.Sqrt(dist(cls[i].origins));
